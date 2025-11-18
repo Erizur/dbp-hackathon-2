@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedUser = authService.getStoredUser();
     const token = authService.getStoredToken();
     
-    if (storedUser && token) {  
+    if (storedUser && token) {
       setUser(storedUser);
     }
     setIsLoading(false);
