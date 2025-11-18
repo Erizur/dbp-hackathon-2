@@ -4,7 +4,7 @@ import { taskService } from '../services/taskService';
 import { projectService } from '../services/projectService';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { DashboardStats } from '../types';
+import type { DashboardStats } from '../types';
 
 export const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats>({
