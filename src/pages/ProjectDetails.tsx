@@ -67,9 +67,9 @@ export const ProjectDetails = () => {
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">Información del Proyecto</h2>
         <div className="space-y-2">
-          <p><span className="font-medium">Descripción:</span> {project.description}</p>
+          <p><span className="font-medium">Descripción:</span> {project.description || 'Sin descripción'}</p>
           <p><span className="font-medium">Estado:</span> {project.status}</p>
-          <p><span className="font-medium">Creado:</span> {new Date(project.createdAt || '').toLocaleDateString()}</p>
+          <p><span className="font-medium">Creado:</span> {new Date(project.created_at || '').toLocaleDateString()}</p>
         </div>
       </Card>
 
@@ -105,9 +105,9 @@ export const ProjectDetails = () => {
                     </span>
                   </div>
                 </div>
-                {task.dueDate && (
+                {task.due_date && (
                   <p className="text-sm text-gray-500 mt-2">
-                    Vence: {new Date(task.dueDate).toLocaleDateString()}
+                    Vence: {new Date(task.due_date).toLocaleDateString()}
                   </p>
                 )}
               </div>

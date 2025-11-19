@@ -1,3 +1,4 @@
+// src/pages/Tasks.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { taskService } from '../services/taskService';
@@ -64,15 +65,12 @@ export const Tasks = () => {
       if (statusFilter) params.status = statusFilter;
       if (priorityFilter) params.priority = priorityFilter;
       if (projectFilter) params.projectId = projectFilter;
+      if (assignedToFilter) params.assignedTo = assignedToFilter;
       
       const response = await taskService.getTasks(params);
       
-      let filteredTasks = response.tasks;
-      if (assignedToFilter) {
-        filteredTasks = filteredTasks.filter(t => t.assignedTo === assignedToFilter);
-      }
-      
-      setTasks(filteredTasks);
+      // La API devuelve snake_case
+      setTasks(response.tasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
     } finally {
@@ -80,20 +78,20 @@ export const Tasks = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('¿Estás seguro de eliminar esta tarea?')) return;
     
     try {
-      await taskService.deleteTask(id);
+      await taskService.deleteTask(id.toString());
       loadTasks();
     } catch (error) {
       alert('Error al eliminar tarea');
     }
   };
 
-  const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
+  const handleStatusChange = async (taskId: number, newStatus: TaskStatus) => {
     try {
-      await taskService.updateTaskStatus(taskId, newStatus);
+      await taskService.updateTaskStatus(taskId.toString(), newStatus);
       loadTasks();
     } catch (error) {
       alert('Error al actualizar estado');
@@ -237,11 +235,11 @@ export const Tasks = () => {
                     {task.project && (
                       <span>📁 Proyecto: {task.project.name}</span>
                     )}
-                    {task.assignedUser && (
-                      <span>👤 Asignado a: {task.assignedUser.name}</span>
+                    {task.assigned_to && (
+                      <span>👤 Asignado (ID: {task.assigned_to})</span>
                     )}
-                    {task.dueDate && (
-                      <span>📅 Vence: {new Date(task.dueDate).toLocaleDateString()}</span>
+                    {task.due_date && (
+                      <span>📅 Vence: {new Date(task.due_date).toLocaleDateString()}</span>
                     )}
                   </div>
                 </div>
@@ -326,11 +324,13 @@ const TaskFormModal = ({
 }) => {
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
-  const [projectId, setProjectId] = useState(task?.projectId || defaultProjectId || '');
+  const [projectId, setProjectId] = useState(task?.project_id.toString() || defaultProjectId || '');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'MEDIUM');
   const [status, setStatus] = useState<TaskStatus>(task?.status || 'TODO');
-  const [assignedTo, setAssignedTo] = useState(task?.assignedTo || '');
-  const [dueDate, setDueDate] = useState(task?.dueDate || '');
+  const [assignedTo, setAssignedTo] = useState(task?.assigned_to?.toString() || '');
+  const [dueDate, setDueDate] = useState(
+    task?.due_date ? new Date(task.due_date).toISOString().split('T')[0] : ''
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -341,18 +341,19 @@ const TaskFormModal = ({
 
     try {
       if (task) {
-        await taskService.updateTask(task.id, {
-          title,
-          description,
-          priority,
-          status,
-          assignedTo: assignedTo || undefined,
-          dueDate: dueDate || undefined,
-        });
+        const updateData: any = {};
+        if (title) updateData.title = title;
+        if (description) updateData.description = description;
+        if (priority) updateData.priority = priority;
+        if (status) updateData.status = status;
+        if (assignedTo) updateData.assignedTo = assignedTo;
+        if (dueDate) updateData.dueDate = dueDate;
+        
+        await taskService.updateTask(task.id.toString(), updateData);
       } else {
         await taskService.createTask({
           title,
-          description,
+          description: description || null,
           projectId,
           priority,
           assignedTo: assignedTo || undefined,

@@ -16,18 +16,37 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log(`🌐 [API Request] ${config.method?.toUpperCase()} ${config.url}`, {
+      params: config.params,
+      data: config.data,
+      hasToken: !!token,
+    });
     return config;
   },
   (error) => {
+    console.error('❌ [API Request Error]', error);
     return Promise.reject(error);
   }
 );
 
-// Interceptor para manejar errores de autenticación
+// Interceptor para manejar errores de autenticación y logging
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`✅ [API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, {
+      status: response.status,
+      data: response.data,
+    });
+    return response;
+  },
   (error) => {
+    console.error(`❌ [API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
+    
     if (error.response?.status === 401) {
+      console.warn('⚠️ [API] Token inválido o expirado, redirigiendo a login...');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

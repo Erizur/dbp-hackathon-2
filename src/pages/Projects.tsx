@@ -34,7 +34,7 @@ export const Projects = () => {
     try {
       const response = await projectService.getProjects(currentPage, 10, search);
       setProjects(response.projects);
-      setTotalPages(response.totalPages);
+      setTotalPages(response.total_pages); // snake_case de la API
     } catch (error) {
       console.error('Error loading projects:', error);
     } finally {
@@ -42,11 +42,11 @@ export const Projects = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('¿Estás seguro de eliminar este proyecto?')) return;
     
     try {
-      await projectService.deleteProject(id);
+      await projectService.deleteProject(id.toString());
       loadProjects();
     } catch (error) {
       alert('Error al eliminar proyecto');
@@ -201,9 +201,18 @@ const ProjectFormModal = ({
 
     try {
       if (project) {
-        await projectService.updateProject(project.id, { name, description, status });
+        const updateData: any = {};
+        if (name !== project.name) updateData.name = name;
+        if (description !== project.description) updateData.description = description;
+        if (status !== project.status) updateData.status = status;
+        
+        await projectService.updateProject(project.id.toString(), updateData);
       } else {
-        await projectService.createProject({ name, description, status });
+        await projectService.createProject({ 
+          name, 
+          description: description || null,
+          status 
+        });
       }
       onSuccess();
     } catch (err: any) {

@@ -1,8 +1,8 @@
 export interface User {
-  id: string;
+  id: number;
   email: string;
   name: string;
-  createdAt?: string;
+  created_at?: string;
 }
 
 export interface AuthResponse {
@@ -24,68 +24,70 @@ export interface RegisterCredentials {
 export type ProjectStatus = 'ACTIVE' | 'COMPLETED' | 'ON_HOLD';
 
 export interface Project {
-  id: string;
+  id: number; // La API usa integers
   name: string;
-  description: string;
+  description: string | null;
   status: ProjectStatus;
-  createdAt?: string;
-  updatedAt?: string;
+  owner_id?: number;
+  created_at?: string;
+  updated_at?: string;
   tasks?: Task[];
 }
 
 export interface ProjectsResponse {
   projects: Project[];
-  totalPages: number;
-  currentPage: number;
+  total_pages: number;
+  current_page: number;
 }
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'COMPLETED';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 export interface Task {
-  id: string;
+  id: number; // La API usa integers
   title: string;
-  description: string;
+  description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
-  projectId: string;
-  assignedTo?: string;
-  dueDate?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  project_id: number;
+  assigned_to: number | null;
+  due_date: string | null;
+  created_at?: string;
+  updated_at?: string;
   project?: Project;
   assignedUser?: User;
 }
 
 export interface TasksResponse {
   tasks: Task[];
-  totalPages: number;
+  total_pages: number;
+  current_page: number;
 }
 
 export interface CreateProjectDto {
   name: string;
-  description: string;
-  status: ProjectStatus;
+  description?: string | null;
+  status?: ProjectStatus;
 }
 
 export interface UpdateProjectDto {
   name?: string;
-  description?: string;
+  description?: string | null;
   status?: ProjectStatus;
 }
 
 export interface CreateTaskDto {
   title: string;
-  description: string;
-  projectId: string;
+  description?: string | null;
+  projectId: string; // En el frontend usamos string, lo convertimos en el service
   priority: TaskPriority;
   dueDate?: string;
-  assignedTo?: string;
+  assignedTo?: string; // En el frontend usamos string, lo convertimos en el service
 }
 
 export interface UpdateTaskDto {
   title?: string;
-  description?: string;
+  description?: string | null;
   status?: TaskStatus;
   priority?: TaskPriority;
   dueDate?: string;
@@ -93,7 +95,7 @@ export interface UpdateTaskDto {
 }
 
 export interface TeamMember {
-  id: string;
+  id: number; // La API usa integers
   name: string;
   email: string;
 }

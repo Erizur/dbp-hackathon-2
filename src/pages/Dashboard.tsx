@@ -4,7 +4,7 @@ import { taskService } from '../services/taskService';
 import { projectService } from '../services/projectService';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import type { DashboardStats } from '../types';
+import { DashboardStats } from '../types';
 
 export const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats>({
@@ -30,7 +30,7 @@ export const Dashboard = () => {
 
       const now = new Date();
       const overdue = allTasks.tasks.filter(
-        task => task.dueDate && new Date(task.dueDate) < now && task.status !== 'COMPLETED'
+        task => task.due_date && new Date(task.due_date) < now && task.status !== 'COMPLETED'
       ).length;
 
       setStats({
