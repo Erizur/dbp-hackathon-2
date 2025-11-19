@@ -61,7 +61,7 @@ export const Tasks = () => {
   const loadTasks = async () => {
     setIsLoading(true);
     try {
-      const params: any = { limit: 1000 };
+      const params: any = { limit: 100 };
       if (statusFilter) params.status = statusFilter;
       if (priorityFilter) params.priority = priorityFilter;
       if (projectFilter) params.projectId = projectFilter;

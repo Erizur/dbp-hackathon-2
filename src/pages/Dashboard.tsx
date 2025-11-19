@@ -22,10 +22,10 @@ export const Dashboard = () => {
   const loadStats = async () => {
     try {
       const [allTasks, completedTasks, todoTasks, inProgressTasks] = await Promise.all([
-        taskService.getTasks({ limit: 1000 }),
-        taskService.getTasks({ status: 'COMPLETED', limit: 1000 }),
-        taskService.getTasks({ status: 'TODO', limit: 1000 }),
-        taskService.getTasks({ status: 'IN_PROGRESS', limit: 1000 }),
+        taskService.getTasks({ limit: 100 }),
+        taskService.getTasks({ status: 'COMPLETED', limit: 100 }),
+        taskService.getTasks({ status: 'TODO', limit: 100 }),
+        taskService.getTasks({ status: 'IN_PROGRESS', limit: 100 }),
       ]);
 
       const now = new Date();
