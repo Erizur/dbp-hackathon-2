@@ -31,32 +31,44 @@ api.interceptors.request.use(
 
 // Interceptor para manejar errores de autenticación y logging
 api.interceptors.response.use(
-  (response) => {
-    console.log(`✅ [API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, {
-      status: response.status,
-      data: response.data,
-    });
-    return response;
-  },
+  (response) => response,
   (error) => {
-    console.error(`❌ [API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
+    const originalRequest = error.config;
+
+    // Evitar bucles infinitos si la redirección falla
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    console.error(`❌ [API Error] ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`, {
       status: error.response?.status,
-      data: error.response?.data,
       message: error.message,
     });
-    
-    const isLoginRequest = error.config.url.includes('/auth/login'); // Verifica si la url es la de login
 
+    // 1. Manejo de 401 (No autorizado) - Tu corrección anterior
+    // Ignoramos si es la petición de login para no recargar la página
+    const isLoginRequest = originalRequest.url?.includes('/auth/login');
+    
     if (error.response?.status === 401 && !isLoginRequest) {
-      console.warn('⚠️ [API] Token inválido o expirado, redirigiendo a login...');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+      return Promise.reject(error);
     }
-    
+
+    // 2. NUEVO: Manejo de 404 (No encontrado)
+    // Si la API dice que el recurso no existe, vamos al Dashboard
+    if (error.response?.status === 404) {
+      // Opcional: Solo redirigir si es una petición GET (navegación)
+      if (originalRequest.method === 'get') {
+        console.warn('⚠️ [API] Recurso no encontrado (404), redirigiendo al dashboard...');
+        window.location.href = '/dashboard';
+        return Promise.resolve(); // Resolvemos para evitar errores en consola
+      }
+    }
+
     return Promise.reject(error);
   }
 );
-;
 
 export default api;
