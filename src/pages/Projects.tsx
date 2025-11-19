@@ -10,12 +10,19 @@ import { Card } from '../components/common/Card';
 export const Projects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const ITEMS_PER_PAGE = 3; // Definimos el límite por página
+  
+  // Búsqueda y Filtros
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ProjectStatus | ''>(''); // NUEVO: Filtro de estado
+  
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -25,21 +32,43 @@ export const Projects = () => {
     }
   }, [searchParams]);
 
+  // Recargar cuando cambien la página, la búsqueda o el filtro
   useEffect(() => {
     loadProjects();
-  }, [currentPage, search]);
+  }, [currentPage, search, statusFilter]); // statusFilter añadido aquí
 
   const loadProjects = async () => {
     setIsLoading(true);
     try {
-      const response = await projectService.getProjects(currentPage, 10, search);
+      const params: any = { 
+        page: currentPage, 
+        limit: ITEMS_PER_PAGE 
+      };
+
+      if (search) params.search = search;
+      if (statusFilter) params.status = statusFilter; // Aplicar filtro de estado
+
+      const response = await projectService.getProjects(params.page, params.limit, params.search, params.status);
+      
       setProjects(response.projects);
-      setTotalPages(response.total_pages); // snake_case de la API
+      setTotalPages(response.total_pages);
     } catch (error) {
       console.error('Error loading projects:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // NUEVO: Reiniciar a página 1 cuando se cambian filtros o búsqueda
+  const handleFilterChange = (setter: any, value: any) => {
+    setter(value);
+    setCurrentPage(1);
+  };
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('');
+    setCurrentPage(1);
   };
 
   const handleDelete = async (id: number) => {
@@ -74,16 +103,33 @@ export const Projects = () => {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="flex gap-4">
-        <Input
-          placeholder="Buscar proyectos..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1"
-        />
-      </div>
-
+      {/* Search and Filters */}
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold mb-4">Filtros y Búsqueda</h2>
+        <div className="flex flex-col md:flex-row gap-4">
+          <Input
+            placeholder="Buscar proyectos por nombre o descripción..."
+            value={search}
+            onChange={(e) => handleFilterChange(setSearch, e.target.value)} // Usamos handleFilterChange
+            className="flex-1"
+          />
+          <div>
+            <label className="sr-only">Estado</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => handleFilterChange(setStatusFilter, e.target.value)} // Usamos handleFilterChange
+              className="w-full md:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Todos los Estados</option>
+              <option value="ACTIVE">Activo</option>
+              <option value="COMPLETED">Completado</option>
+              <option value="ON_HOLD">En Espera</option>
+            </select>
+          </div>
+          <Button variant="secondary" onClick={clearFilters}>Limpiar</Button>
+        </div>
+      </Card>
+      
       {/* Projects Grid */}
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
@@ -91,7 +137,7 @@ export const Projects = () => {
         </div>
       ) : projects.length === 0 ? (
         <Card className="p-12 text-center">
-          <p className="text-gray-600">No hay proyectos aún. ¡Crea el primero!</p>
+          <p className="text-gray-600">No se encontraron proyectos con los filtros seleccionados.</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -136,17 +182,17 @@ export const Projects = () => {
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center items-center gap-4 pt-4">
           <Button
             variant="secondary"
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
           >
-            Anterior
+            ← Anterior
           </Button>
-          <span className="px-4 py-2">
+          <span className="text-gray-600 font-medium">
             Página {currentPage} de {totalPages}
           </span>
           <Button
@@ -154,7 +200,7 @@ export const Projects = () => {
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
           >
-            Siguiente
+            Siguiente →
           </Button>
         </div>
       )}
@@ -178,7 +224,7 @@ export const Projects = () => {
   );
 };
 
-// Project Form Modal Component
+// Project Form Modal Component (Se mantiene igual)
 const ProjectFormModal = ({
   project,
   onClose,
