@@ -1,4 +1,3 @@
-// src/pages/Tasks.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { taskService } from '../services/taskService';
@@ -18,6 +17,11 @@ export const Tasks = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const ITEMS_PER_PAGE = 3;
+
   // Filtros
   const [statusFilter, setStatusFilter] = useState<TaskStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | ''>('');
@@ -41,9 +45,10 @@ export const Tasks = () => {
     loadInitialData();
   }, []);
 
+  // Recargar cuando cambien los filtros o la página
   useEffect(() => {
     loadTasks();
-  }, [statusFilter, priorityFilter, projectFilter, assignedToFilter]);
+  }, [statusFilter, priorityFilter, projectFilter, assignedToFilter, currentPage]);
 
   const loadInitialData = async () => {
     try {
@@ -61,7 +66,11 @@ export const Tasks = () => {
   const loadTasks = async () => {
     setIsLoading(true);
     try {
-      const params: any = { limit: 100 };
+      const params: any = { 
+        limit: ITEMS_PER_PAGE,
+        page: currentPage // Enviamos la página actual al backend
+      };
+      
       if (statusFilter) params.status = statusFilter;
       if (priorityFilter) params.priority = priorityFilter;
       if (projectFilter) params.projectId = projectFilter;
@@ -69,8 +78,8 @@ export const Tasks = () => {
       
       const response = await taskService.getTasks(params);
       
-      // La API devuelve snake_case
       setTasks(response.tasks);
+      setTotalPages(response.total_pages); // Actualizamos el total de páginas
     } catch (error) {
       console.error('Error loading tasks:', error);
     } finally {
@@ -78,9 +87,23 @@ export const Tasks = () => {
     }
   };
 
+  // Reiniciar a página 1 cuando se cambian filtros
+  const handleFilterChange = (setter: any, value: any) => {
+    setter(value);
+    setCurrentPage(1);
+  };
+
+  const clearFilters = () => {
+    setStatusFilter('');
+    setPriorityFilter('');
+    setProjectFilter('');
+    setAssignedToFilter('');
+    setCurrentPage(1);
+  };
+
+  // ... (Mantén las funciones handleDelete, handleStatusChange, statusColors, priorityColors igual que antes)
   const handleDelete = async (id: number) => {
     if (!window.confirm('¿Estás seguro de eliminar esta tarea?')) return;
-    
     try {
       await taskService.deleteTask(id.toString());
       loadTasks();
@@ -96,13 +119,6 @@ export const Tasks = () => {
     } catch (error) {
       alert('Error al actualizar estado');
     }
-  };
-
-  const clearFilters = () => {
-    setStatusFilter('');
-    setPriorityFilter('');
-    setProjectFilter('');
-    setAssignedToFilter('');
   };
 
   const statusColors: Record<TaskStatus, string> = {
@@ -132,12 +148,10 @@ export const Tasks = () => {
         <h2 className="text-lg font-semibold mb-4">Filtros</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estado
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as TaskStatus | '')}
+              onChange={(e) => handleFilterChange(setStatusFilter, e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Todos</option>
@@ -146,14 +160,12 @@ export const Tasks = () => {
               <option value="COMPLETED">Completada</option>
             </select>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Prioridad
-            </label>
+          {/* ... Resto de los filtros usan handleFilterChange ahora ... */}
+           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prioridad</label>
             <select
               value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value as TaskPriority | '')}
+              onChange={(e) => handleFilterChange(setPriorityFilter, e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Todas</option>
@@ -163,14 +175,11 @@ export const Tasks = () => {
               <option value="URGENT">Urgente</option>
             </select>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Proyecto
-            </label>
+           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Proyecto</label>
             <select
               value={projectFilter}
-              onChange={(e) => setProjectFilter(e.target.value)}
+              onChange={(e) => handleFilterChange(setProjectFilter, e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Todos</option>
@@ -179,14 +188,11 @@ export const Tasks = () => {
               ))}
             </select>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Asignado a
-            </label>
+           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Asignado a</label>
             <select
               value={assignedToFilter}
-              onChange={(e) => setAssignedToFilter(e.target.value)}
+              onChange={(e) => handleFilterChange(setAssignedToFilter, e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Todos</option>
@@ -196,11 +202,8 @@ export const Tasks = () => {
             </select>
           </div>
         </div>
-        
         <div className="mt-4">
-          <Button variant="secondary" size="sm" onClick={clearFilters}>
-            Limpiar Filtros
-          </Button>
+          <Button variant="secondary" size="sm" onClick={clearFilters}>Limpiar Filtros</Button>
         </div>
       </Card>
 
@@ -216,67 +219,31 @@ export const Tasks = () => {
       ) : (
         <div className="space-y-4">
           {tasks.map((task) => (
+             /* ... El contenido de la tarjeta de tarea se mantiene igual ... */
             <Card key={task.id} className="p-6">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-xl font-semibold">{task.title}</h3>
-                    <span className={`px-2 py-1 text-xs rounded-full ${statusColors[task.status]}`}>
-                      {task.status}
-                    </span>
-                    <span className={`px-2 py-1 text-xs rounded-full ${priorityColors[task.priority]}`}>
-                      {task.priority}
-                    </span>
+                    <span className={`px-2 py-1 text-xs rounded-full ${statusColors[task.status]}`}>{task.status}</span>
+                    <span className={`px-2 py-1 text-xs rounded-full ${priorityColors[task.priority]}`}>{task.priority}</span>
                   </div>
-                  
                   <p className="text-gray-600 mb-3">{task.description}</p>
-                  
                   <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                    {task.project && (
-                      <span>📁 Proyecto: {task.project.name}</span>
-                    )}
-                    {task.assigned_to && (
-                      <span>👤 Asignado (ID: {task.assigned_to})</span>
-                    )}
-                    {task.due_date && (
-                      <span>📅 Vence: {new Date(task.due_date).toLocaleDateString()}</span>
-                    )}
+                    {task.project && <span>📁 Proyecto: {task.project.name}</span>}
+                    {task.assigned_to && <span>👤 Asignado (ID: {task.assigned_to})</span>}
+                    {task.due_date && <span>📅 Vence: {new Date(task.due_date).toLocaleDateString()}</span>}
                   </div>
                 </div>
-
                 <div className="flex flex-col gap-2 ml-4">
                   {task.status !== 'COMPLETED' && (
-                    <Button
-                      size="sm"
-                      variant="success"
-                      onClick={() => handleStatusChange(task.id, 'COMPLETED')}
-                    >
-                      ✓ Completar
-                    </Button>
+                    <Button size="sm" variant="success" onClick={() => handleStatusChange(task.id, 'COMPLETED')}>✓ Completar</Button>
                   )}
                   {task.status === 'TODO' && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleStatusChange(task.id, 'IN_PROGRESS')}
-                    >
-                      ▶ Iniciar
-                    </Button>
+                    <Button size="sm" variant="secondary" onClick={() => handleStatusChange(task.id, 'IN_PROGRESS')}>▶ Iniciar</Button>
                   )}
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setEditingTask(task)}
-                  >
-                    ✎ Editar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => handleDelete(task.id)}
-                  >
-                    🗑 Eliminar
-                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => setEditingTask(task)}>✎ Editar</Button>
+                  <Button size="sm" variant="danger" onClick={() => handleDelete(task.id)}>🗑 Eliminar</Button>
                 </div>
               </div>
             </Card>
@@ -284,8 +251,31 @@ export const Tasks = () => {
         </div>
       )}
 
-      {/* Create/Edit Modal */}
-      {(showCreateModal || editingTask) && (
+      {/* Pagination Controls (NUEVO) */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-4 pt-4">
+          <Button
+            variant="secondary"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            ← Anterior
+          </Button>
+          <span className="text-gray-600 font-medium">
+            Página {currentPage} de {totalPages}
+          </span>
+          <Button
+            variant="secondary"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Siguiente →
+          </Button>
+        </div>
+      )}
+
+      {/* Create/Edit Modal - Se mantiene igual, asegúrate de tener TaskFormModal definido abajo como antes */}
+       {(showCreateModal || editingTask) && (
         <TaskFormModal
           task={editingTask}
           projects={projects}
@@ -306,7 +296,8 @@ export const Tasks = () => {
   );
 };
 
-// Task Form Modal Component
+// ... (El componente TaskFormModal sigue aquí abajo igual que en tu archivo original)
+// Asegúrate de no borrar TaskFormModal del final del archivo
 const TaskFormModal = ({
   task,
   projects,
@@ -322,6 +313,8 @@ const TaskFormModal = ({
   onClose: () => void;
   onSuccess: () => void;
 }) => {
+    // ... Copia el contenido original de TaskFormModal aquí ...
+    // (Por brevedad no lo repito, pero el código original estaba bien)
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
   const [projectId, setProjectId] = useState(task?.project_id.toString() || defaultProjectId || '');
