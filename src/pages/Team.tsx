@@ -41,7 +41,7 @@ export const Team = () => {
 
   const handleSelectMember = (member: TeamMember) => {
     setSelectedMember(member);
-    loadMemberTasks(member.id);
+    loadMemberTasks(member.id.toString());
   };
 
   if (isLoading) {
