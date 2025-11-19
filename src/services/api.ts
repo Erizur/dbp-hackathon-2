@@ -45,14 +45,18 @@ api.interceptors.response.use(
       message: error.message,
     });
     
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config.url.includes('/auth/login'); // Verifica si la url es la de login
+
+    if (error.response?.status === 401 && !isLoginRequest) {
       console.warn('⚠️ [API] Token inválido o expirado, redirigiendo a login...');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
+    
     return Promise.reject(error);
   }
 );
+;
 
 export default api;
